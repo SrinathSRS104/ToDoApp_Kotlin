@@ -22,25 +22,39 @@ lateinit var adapter: Adapter
 private var listViewItems: ListView? = null
 
 class MainActivity : AppCompatActivity(), ItemRowListener {
+
+    // For Delete a ToDo Item
     override fun onItemDelete(itemObjectId: String) {
+        // Find the specific item on the Firebase DB based on the itemObjectId of the ToDo item
         val itemReference = mDatabase.child(Constants.FIREBASE_ITEM).child(itemObjectId)
+        // remove the item from the DB
         itemReference.removeValue()
+        // Display a toast notification on Successful Deletion of the Item
         Toast.makeText(this,  "Removed Successfully ", Toast.LENGTH_SHORT).show()
+        // Finish the current activity and start again.. Technically Restart the activity
         val intent = intent
         finish()
         startActivity(intent)
     }
 
+    // For Update a Todo Item
     override fun modifyItemState(itemObjectId: String, isDone: Boolean) {
+        // Find the specific item on the Firebase DB based on the itemObjectId of the ToDo item
         val itemReference = mDatabase.child(Constants.FIREBASE_ITEM).child(itemObjectId)
+        // Set the Value
         itemReference.child("done").setValue(isDone)
-
     }
 
+    // Main function
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Get the savedInstance from the previous state
         super.onCreate(savedInstanceState)
+        // Load the relevant Layout for the activity
         setContentView(R.layout.activity_main)
-      //  setSupportActionBar(toolbar)
+        // To Display the Top Toolbar / Disabled
+        /*setSupportActionBar(toolbar)*/
+
+        //Initialize the Firebase
         FirebaseApp.initializeApp(this)
 
         //reference for FAB
