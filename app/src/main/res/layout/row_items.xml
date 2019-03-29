@@ -32,6 +32,6 @@
             android:layout_centerVertical="true"
             android:background="@android:color/transparent"
             android:gravity="end"
-            app:srcCompat="@android:drawable/btn_minus" />
+            app:srcCompat="@android:drawable/ic_delete" />
 
 </RelativeLayout>

@@ -42,7 +42,7 @@ class MainActivity : AppCompatActivity(), ItemRowListener {
         fab.setOnClickListener {
             showNewTaskUI()     // When the add button clicked it will trigger the showNewTaskUI
         }
-
+K
         mDatabase = FirebaseDatabase.getInstance().reference
         toDoItemList = mutableListOf<DbModel>()
         adapter = Adapter(this, toDoItemList!!)
