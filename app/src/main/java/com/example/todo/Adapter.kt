@@ -18,7 +18,7 @@ class Adapter(context: Context, toDoItemList: MutableList<DbModel>) : BaseAdapte
     private var rowListener: ItemRowListener = context as ItemRowListener
 
     override fun getCount(): Int {
-        return itemList.size
+        return itemList.size                            // returns total no of items in the list
     }
 
     override fun getItemId(index: Int): Long {
@@ -26,7 +26,7 @@ class Adapter(context: Context, toDoItemList: MutableList<DbModel>) : BaseAdapte
     }
 
     override fun getItem(index: Int): Any {
-        return itemList[index]
+        return itemList[index]                          // returns specific item on the position <index>
     }
 
     override fun getView(position: Int, convertView: View?, parent: ViewGroup?): View {
@@ -37,7 +37,7 @@ class Adapter(context: Context, toDoItemList: MutableList<DbModel>) : BaseAdapte
         val view: View
         val vh: ListRowHolder
         if (convertView == null) {
-            view = mInflater.inflate(R.layout.row_items, parent, false)
+            view = mInflater.inflate(R.layout.row_items, parent, false)         // Inflate the layout for each list item
             vh = ListRowHolder(view)
             view.tag = vh
         } else {
@@ -54,11 +54,8 @@ class Adapter(context: Context, toDoItemList: MutableList<DbModel>) : BaseAdapte
             rowListener.onItemDelete(objectId)
             adapter.notifyDataSetChanged()
         }
-
-
         return view
     }
-
 }
 
 private class ListRowHolder(row: View?) {
