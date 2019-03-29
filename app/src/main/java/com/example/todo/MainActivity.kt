@@ -23,6 +23,104 @@ private var listViewItems: ListView? = null
 
 class MainActivity : AppCompatActivity(), ItemRowListener {
 
+    // Main function
+    override fun onCreate(savedInstanceState: Bundle?) {
+        // Get the savedInstance from the previous state
+        super.onCreate(savedInstanceState)
+        // Load the relevant Layout for the activity
+        setContentView(R.layout.activity_main)
+        // To Display the Top Toolbar / Disabled
+        /*setSupportActionBar(toolbar)*/
+
+        //Initialize the Firebase
+        FirebaseApp.initializeApp(this)
+
+        //reference for add button and listview
+        val fab = findViewById<View>(R.id.fab) as FloatingActionButton
+        listViewItems = findViewById<View>(R.id.list_view) as ListView
+
+        fab.setOnClickListener {
+            showNewTaskUI()     // When the add button clicked it will trigger the showNewTaskUI
+        }
+
+        mDatabase = FirebaseDatabase.getInstance().reference
+        toDoItemList = mutableListOf<DbModel>()
+        adapter = Adapter(this, toDoItemList!!)
+        listViewItems?.adapter = adapter
+        mDatabase.orderByKey().addListenerForSingleValueEvent(itemListener)
+    }
+
+    // Adding New ToDo item UI function
+    private fun showNewTaskUI() {
+        // Popup as an alert dialog
+        val alert = AlertDialog.Builder(this)
+        val itemEditText = EditText(this)               // Save the typed text as itemEditText variable
+        alert.setTitle("Remind me...")
+        /*alert.setMessage("type here...")*/
+        alert.setView(itemEditText)
+        alert.setIcon(R.drawable.ic_mtrl_chip_checked_circle)
+        alert.setPositiveButton("Add") { dialog, positiveButton ->
+            val todoItem = DbModel.create()                                     // create a todoItem based on our DbModel
+            todoItem.itemText = itemEditText.text.toString()                    // Add the typed text to the model
+            todoItem.done = false                                               // By default set the done as false
+            val newItem = mDatabase.child(Constants.FIREBASE_ITEM).push()       // first make a push create a new item to get an UniqueID
+            todoItem.objectId = newItem.key                                     // save that id as objectId
+            newItem.setValue(todoItem)                                          // set all values of the todoItem model to newItem
+            dialog.dismiss()                                                    // close the dialog box
+            Toast.makeText(this,  todoItem.itemText + " is added to the list... ", Toast.LENGTH_SHORT).show()
+            // close the current activity and restart it
+            val intent = intent
+            finish()
+            startActivity(intent)
+        }
+        alert.show()                            //???
+    }
+
+    // Following function will monitor the Data changes and update
+    private var itemListener: ValueEventListener = object : ValueEventListener {
+        override fun onDataChange(dataSnapshot: DataSnapshot) {
+            addDataToList(dataSnapshot)
+        }
+
+        override fun onCancelled(databaseError: DatabaseError) {
+          //  Log.w("MainActivity", "loadItem:onCancelled", databaseError.toException())        //???
+        }
+    }
+
+    // Updating the List (UI)
+    private fun addDataToList(dataSnapshot: DataSnapshot) {
+
+        val items = dataSnapshot.children.iterator()                            // Check if current database contains any collection
+
+        if (items.hasNext()) {
+            val toDoListindex = items.next()
+            val itemsIterator = toDoListindex.children.iterator()
+
+            //check if the collection has any to do items or not
+            while (itemsIterator.hasNext()) {
+
+                //get current item
+                val currentItem = itemsIterator.next()
+                val todoItem = DbModel.create()
+
+                //get current data in a map
+                val map = currentItem.value as HashMap<String, Any>
+
+                //key will return Firebase ID
+                todoItem.objectId = currentItem.key
+                todoItem.done = map["done"] as Boolean?
+                todoItem.itemText = map["itemText"] as String?
+
+                toDoItemList!!.add(todoItem)
+            }
+        }
+
+
+        //alert adapter that has changed
+        adapter.notifyDataSetChanged()
+    }
+
+
     // For Delete a ToDo Item
     override fun onItemDelete(itemObjectId: String) {
         // Find the specific item on the Firebase DB based on the itemObjectId of the ToDo item
@@ -45,107 +143,8 @@ class MainActivity : AppCompatActivity(), ItemRowListener {
         itemReference.child("done").setValue(isDone)
     }
 
-    // Main function
-    override fun onCreate(savedInstanceState: Bundle?) {
-        // Get the savedInstance from the previous state
-        super.onCreate(savedInstanceState)
-        // Load the relevant Layout for the activity
-        setContentView(R.layout.activity_main)
-        // To Display the Top Toolbar / Disabled
-        /*setSupportActionBar(toolbar)*/
 
-        //Initialize the Firebase
-        FirebaseApp.initializeApp(this)
-
-        //reference for FAB
-        val fab = findViewById<View>(R.id.fab) as FloatingActionButton
-        listViewItems = findViewById<View>(R.id.list_view) as ListView
-
-        fab.setOnClickListener {
-            showNewTaskUI()
-        }
-
-        mDatabase = FirebaseDatabase.getInstance().reference
-        toDoItemList = mutableListOf<DbModel>()
-        adapter = Adapter(this, toDoItemList!!)
-        listViewItems?.adapter = adapter
-        mDatabase.orderByKey().addListenerForSingleValueEvent(itemListener)
-    }
-
-    private fun showNewTaskUI() {
-        val alert = AlertDialog.Builder(this)
-        val itemEditText = EditText(this)
-        alert.setMessage("type here...")
-        alert.setTitle("Add New To Do Item")
-        alert.setView(itemEditText)
-        alert.setPositiveButton("Add") { dialog, positiveButton ->
-            val todoItem = DbModel.create()
-            todoItem.itemText = itemEditText.text.toString()
-            todoItem.done = false
-            //We first make a push so that a new item is made with a unique ID
-                val newItem = mDatabase.child(Constants.FIREBASE_ITEM).push()
-                todoItem.objectId = newItem.key
-                //then, we used the reference to set the value on that ID
-                newItem.setValue(todoItem)
-                dialog.dismiss()
-            Toast.makeText(this,  todoItem.itemText + " is added to the list... ", Toast.LENGTH_SHORT).show()
-            val intent = intent
-            finish()
-            startActivity(intent)
-        }
-        alert.show()
-
-
-
-    }
-
-    var itemListener: ValueEventListener = object : ValueEventListener {
-        override fun onDataChange(dataSnapshot: DataSnapshot) {
-            // Get Post object and use the values to update the UI
-            addDataToList(dataSnapshot)
-
-        }
-
-        override fun onCancelled(databaseError: DatabaseError) {
-            // Getting Item failed, log a message
-            Log.w("MainActivity", "loadItem:onCancelled", databaseError.toException())
-        }
-    }
-
-    private fun addDataToList(dataSnapshot: DataSnapshot) {
-
-        val items = dataSnapshot.children.iterator()
-        //Check if current database contains any collection
-        if (items.hasNext()) {
-            val toDoListindex = items.next()
-            val itemsIterator = toDoListindex.children.iterator()
-
-            //check if the collection has any to do items or not
-            while (itemsIterator.hasNext()) {
-
-
-                //get current item
-                val currentItem = itemsIterator.next()
-                val todoItem = DbModel.create()
-
-
-                //get current data in a map
-                val map = currentItem.value as HashMap<String, Any>
-
-
-                //key will return Firebase ID
-                todoItem.objectId = currentItem.key
-                todoItem.done = map["done"] as Boolean?
-                todoItem.itemText = map["itemText"] as String?
-
-                toDoItemList!!.add(todoItem)
-            }
-        }
-
-
-        //alert adapter that has changed
-        adapter.notifyDataSetChanged()
-    }
+    /* ******************************************** */
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         // Inflate the menu; this adds items to the action bar if it is present.
